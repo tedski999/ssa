@@ -53,15 +53,15 @@ void *alloc(unsigned size) {
 		return NULL;
 
 	// Find a gap between two blocks that can fit this new block
-	struct block *prev_block, *new_block = NULL;
+	struct block *new_block = NULL;
 	for (int i = 0; i < blocks_count; i++) {
-		prev_block = blocks + i;
+		struct block *prev_block = blocks + i;
 		char *after_prev_block = prev_block->ptr + prev_block->size;
 
 		// Try fit the new block in the gap between prev_block and the next.
 		// If there is no next block, try fit the new block before the end of the heap.
-		if ((i != blocks_count - 1 && (prev_block + 1)->ptr - after_prev_block >= size) ||
-			(i == blocks_count - 1 && after_prev_block + size <= heap + HEAP_CAPACITY)) {
+		if ((i != blocks_count-1 && (prev_block+1)->ptr - after_prev_block >= size) ||
+			(i == blocks_count-1 && after_prev_block + size <= heap + HEAP_CAPACITY)) {
 			new_block = prev_block + 1;
 			break;
 		}
@@ -72,10 +72,10 @@ void *alloc(unsigned size) {
 		return NULL;
 
 	// Insert the new block into the list
-	struct block *block = blocks + blocks_count;
-	while (block-- > new_block)
-		*(block + 1) = *block;
-	new_block->ptr = prev_block->ptr + prev_block->size;
+	struct block *shift_block = blocks + blocks_count;
+	while (shift_block-- > new_block)
+		*(shift_block+1) = *shift_block;
+	new_block->ptr = (new_block-1)->ptr + (new_block-1)->size;
 	new_block->size = size;
 
 	blocks_count++;
