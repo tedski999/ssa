@@ -6,5 +6,5 @@ determine free slots between blocks.
 
 Build and run with `make` or `cc src/main.c src/ssa.c -o ssa && ./ssa`.
 
-Licensed under GPLv3
+Licensed under GPLv3\
 Ted Johnson 2021
