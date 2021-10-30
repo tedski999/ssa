@@ -1,5 +1,5 @@
 /**
- * Ski's Simple Allocator
+ * Simple Static Allocator
  * Copyright (C) 2021 Ted Johnson
  *
  * This program is free software: you can redistribute it and/or modify
@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
 	dealloc(ptr3);
 	print_blocks();
 
-	// Allocate an addition 3 blocks
+	// Allocate an additional 3 blocks
 	char *ptr5 = alloc(50);
 	char *ptr6 = alloc(50);
 	char *ptr7 = alloc(200);

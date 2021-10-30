@@ -1,5 +1,5 @@
 /**
- * Ski's Simple Allocator
+ * Simple Static Allocator
  * Copyright (C) 2021 Ted Johnson
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,8 +19,28 @@
 #ifndef SSA_H
 #define SSA_H
 
+/**
+ * Reserves and returns a pointer to bytes on the heap.
+ *
+ * @param size Number of bytes to allocate on the heap
+ * @return A pointer to the beginning of the bytes on the heap
+ * @note The allocated buffer is not initialized
+ * @note NULL is returned if no space could be allocated on the heap
+ */
 void *alloc(unsigned size);
+
+/**
+ * Frees up the allocated bytes on the heap pointed to by ptr.
+ *
+ * @param ptr The address of the buffer on the heap to be deallocated
+ * @note Invalid or unallocated addresses are ignored
+ */
 void dealloc(void *ptr);
+
+/**
+ * Prints the list of currently allocated blocks on the heap.
+ * Define SSA_PRINT when compiling to enable.
+ */
 void print_blocks(void);
 
 #endif

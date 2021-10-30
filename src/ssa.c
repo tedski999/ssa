@@ -1,5 +1,5 @@
 /**
- * Ski's Simple Allocator
+ * Simple Static Allocator
  * Copyright (C) 2021 Ted Johnson
  *
  * This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define NULL (0)
+#define NULL ((void *) 0)
 #define HEAP_CAPACITY (65536)
 #define BLOCK_CAPACITY (1024)
 
@@ -26,7 +26,6 @@ struct block blocks[BLOCK_CAPACITY] = { { heap, 0 } }; // A priority queue of bl
 int blocks_count = 1; // We always have at least one block of size 0 at the beginning of the heap to make the logic simplier.
 
 #include "ssa.h"
-#include <stdio.h> // printf needed for print_blocks
 
 /**
  * Reserves and returns a pointer to bytes on the heap.
@@ -53,15 +52,13 @@ void *alloc(unsigned size) {
 		return NULL;
 
 	// Find a gap between two blocks that can fit this new block
+	char *block_start, *block_end;
 	struct block *new_block = NULL;
 	for (int i = 0; i < blocks_count; i++) {
 		struct block *prev_block = blocks + i;
-		char *after_prev_block = prev_block->ptr + prev_block->size;
-
-		// Try fit the new block in the gap between prev_block and the next.
-		// If there is no next block, try fit the new block before the end of the heap.
-		if ((i != blocks_count-1 && (prev_block+1)->ptr - after_prev_block >= size) ||
-			(i == blocks_count-1 && after_prev_block + size <= heap + HEAP_CAPACITY)) {
+		block_start = prev_block->ptr + prev_block->size;
+		block_end = (i < blocks_count - 1) ? (prev_block + 1)->ptr : heap + HEAP_CAPACITY;
+		if (block_end - block_start >= size) {
 			new_block = prev_block + 1;
 			break;
 		}
@@ -75,8 +72,7 @@ void *alloc(unsigned size) {
 	struct block *shift_block = blocks + blocks_count;
 	while (shift_block-- > new_block)
 		*(shift_block+1) = *shift_block;
-	new_block->ptr = (new_block-1)->ptr + (new_block-1)->size;
-	new_block->size = size;
+	*new_block = (struct block) { block_start, size };
 
 	blocks_count++;
 	return new_block->ptr;
@@ -105,12 +101,15 @@ void dealloc(void *ptr) {
 	}
 
 	// Shift all blocks after i back one to remove i
-	do blocks[i] = blocks[i + 1]; while (i++ < blocks_count);
+	do blocks[i] = blocks[i+1]; while (i++ < blocks_count);
 }
 
 /**
  * Prints the list of currently allocated blocks on the heap.
+ * Define SSA_PRINT when compiling to enable.
  */
+#ifdef SSA_PRINT
+#include <stdio.h> // printf
 void print_blocks(void) {
 	printf("\nAllocated blocks:\n");
 	for (int i = 0; i < blocks_count; i++) {
@@ -124,12 +123,15 @@ void print_blocks(void) {
 				blocks[i].size);
 		}
 
-		// Print the size of a gap if their is one.
-		// Also deal with the case that this is the last block in the list
-		int gap = (i < blocks_count - 1)
-			? blocks[i+1].ptr - (blocks[i].ptr + blocks[i].size)
-			: (heap + HEAP_CAPACITY) - (blocks[i].ptr + blocks[i].size);
+		// Print the size of a gap if there is one
+		struct block *prev_block = blocks + i;
+		char *block_start = prev_block->ptr + prev_block->size;
+		char *block_end = (i < blocks_count - 1) ? (prev_block + 1)->ptr : heap + HEAP_CAPACITY;
+		int gap = block_end - block_start;
 		if (gap)
 			printf("  < Gap of %d bytes >\n", gap);
 	}
 }
+#else
+void print_blocks(void) {}
+#endif
