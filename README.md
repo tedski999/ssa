@@ -6,5 +6,5 @@ determine free slots between blocks.
 
 Build the library with `make`. Build some test programs with `make all`.
 
-Licensed under GPLv3
+Licensed under GPLv3\
 Ted Johnson 2021
