@@ -10,7 +10,7 @@ build: lib/lib${TARGET}.so lib/${TARGET}.a
 
 # Build everything
 .PHONY: all
-all: bin/ssa_dynamic bin/ssa_static
+all: bin/${TARGET}_dynamic bin/${TARGET}_static
 	@echo "Full build complete."
 
 # Remove build directories
@@ -19,22 +19,22 @@ clean:
 	@echo "Removing build directories..."
 	@rm -rf obj lib bin
 
-lib/libssa.so: obj/ssa.o
+lib/lib${TARGET}.so: obj/${TARGET}.o
 	@echo "Linking $@..."
 	@mkdir -p $(@D)
 	@$(CC) -shared -o $@ $^
 
-lib/ssa.a: obj/ssa.o
+lib/${TARGET}.a: obj/${TARGET}.o
 	@echo "Linking $@..."
 	@mkdir -p $(@D)
 	@$(AR) rcs $@ $^
 
-bin/ssa_dynamic: obj/main.o lib/libssa.so
+bin/${TARGET}_dynamic: obj/main.o lib/lib${TARGET}.so
 	@echo "Linking $@..."
 	@mkdir -p $(@D)
 	@$(CC) -o $@ $^
 
-bin/ssa_static: obj/main.o lib/ssa.a
+bin/${TARGET}_static: obj/main.o lib/${TARGET}.a
 	@echo "Linking $@..."
 	@mkdir -p $(@D)
 	@$(CC) -o $@ $^
