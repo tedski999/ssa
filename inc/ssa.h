@@ -19,6 +19,11 @@
 #ifndef SSA_H
 #define SSA_H
 
+#ifdef SSA_OVERRIDE
+#define malloc(x) alloc(x)
+#define free(x) dealloc(x)
+#endif
+
 /**
  * Reserves and returns a pointer to bytes on the heap.
  *
