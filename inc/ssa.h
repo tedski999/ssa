@@ -20,8 +20,8 @@
 #define SSA_H
 
 #ifdef SSA_OVERRIDE
-#define malloc(x) alloc(x)
-#define free(x) dealloc(x)
+#define malloc(s) ssa_malloc(s)
+#define free(p) ssa_free(p)
 #endif
 
 /**
@@ -32,7 +32,7 @@
  * @note The allocated buffer is not initialized
  * @note NULL is returned if no space could be allocated on the heap
  */
-void *alloc(unsigned size);
+void *ssa_malloc(unsigned size);
 
 /**
  * Frees up the allocated bytes on the heap pointed to by ptr.
@@ -40,12 +40,12 @@ void *alloc(unsigned size);
  * @param ptr The address of the buffer on the heap to be deallocated
  * @note Invalid or unallocated addresses are ignored
  */
-void dealloc(void *ptr);
+void ssa_free(void *ptr);
 
 /**
  * Prints the list of currently allocated blocks on the heap.
  * Define SSA_PRINT when compiling to enable.
  */
-void print_blocks(void);
+void ssa_print_blocks(void);
 
 #endif

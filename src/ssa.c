@@ -39,7 +39,7 @@ static int block_count;
  * @note The allocated buffer is not initialized
  * @note NULL is returned if no space could be allocated on the heap
  */
-void *alloc(unsigned size) {
+void *ssa_malloc(unsigned size) {
 
 	// Allocate at least 1 byte to ensure the returned pointer is unique
 	if (size == 0)
@@ -84,7 +84,7 @@ void *alloc(unsigned size) {
  * @param ptr The address of the buffer on the heap to be deallocated
  * @note Invalid or unallocated addresses are ignored
  */
-void dealloc(void *ptr) {
+void ssa_free(void *ptr) {
 
 	// Find a block with a pointer equal to ptr
 	struct block *last_block = (struct block *) (heap + HEAP_CAPACITY) - block_count;
@@ -108,7 +108,7 @@ void dealloc(void *ptr) {
  */
 #ifdef SSA_PRINT
 #include <stdio.h> // printf
-void print_blocks(void) {
+void ssa_print_blocks(void) {
 	char *end = heap;
 	struct block *block = (struct block *) (heap + HEAP_CAPACITY) - 1;
 
