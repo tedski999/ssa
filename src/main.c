@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 	print_blocks();
 
 	// Allocate the entire heap
-	char *ptr9 = alloc(65536);
+	char *ptr9 = alloc(65536 - 2 * 16); // 2 * 16 bytes of space needed for the ptr9 and ptr10 blocks
 	print_blocks();
 
 	// Try allocate a single additional byte

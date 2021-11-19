@@ -16,16 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "ssa.h"
+
 #define NULL ((void *) 0)
 #define HEAP_CAPACITY (65536)
-#define BLOCK_CAPACITY (1024)
 
-char heap[HEAP_CAPACITY]; // Pointers to within this array will be returned to our client. It will serve as our system memory.
-struct block { char *ptr; unsigned size; }; // A series of allocated bytes on the heap is called a block.
-struct block blocks[BLOCK_CAPACITY] = { { heap, 0 } }; // A priority queue of blocks sorted by address.
-int blocks_count = 1; // We always have at least one block of size 0 at the beginning of the heap to make the logic simplier.
-
-#include "ssa.h"
+struct block { char *ptr; unsigned size; };
+static char heap[HEAP_CAPACITY];
+static int block_count;
 
 /**
  * Reserves and returns a pointer to bytes on the heap.
@@ -47,34 +45,31 @@ void *alloc(unsigned size) {
 	if (size == 0)
 		size = 1;
 
-	// Can't handle any more blocks
-	if (blocks_count >= BLOCK_CAPACITY)
-		return NULL;
-
-	// Find a gap between two blocks that can fit this new block
-	char *block_start, *block_end;
-	struct block *new_block = NULL;
-	for (int i = 0; i < blocks_count; i++) {
-		struct block *prev_block = blocks + i;
-		block_start = prev_block->ptr + prev_block->size;
-		block_end = (i < blocks_count - 1) ? (prev_block + 1)->ptr : heap + HEAP_CAPACITY;
-		if (block_end - block_start >= size) {
-			new_block = prev_block + 1;
+	// Locate space for the new block
+	char *end = heap;
+	struct block *new_block = (struct block *) (heap + HEAP_CAPACITY) - 1;
+	for (int i = 0; i < block_count; i++, new_block--) {
+		if (new_block->ptr - end >= size)
 			break;
-		}
+		end = new_block->ptr + new_block->size;
 	}
 
-	// No space found
-	if (!new_block)
+	// Check there is enough free space between allocated memory and the block list including this new block
+	struct block *last_block = (struct block *) (heap + HEAP_CAPACITY) - block_count;
+	char *free_space_start = block_count ? last_block->ptr + last_block->size : heap;
+	free_space_start += (new_block == last_block-1) * size;
+	if (free_space_start > (char *) (last_block-1))
 		return NULL;
 
 	// Insert the new block into the list
-	struct block *shift_block = blocks + blocks_count;
-	while (shift_block-- > new_block)
-		*(shift_block+1) = *shift_block;
-	*new_block = (struct block) { block_start, size };
-
-	blocks_count++;
+	struct block *shift_block = last_block;
+	while (shift_block <= new_block) {
+		*(shift_block-1) = *shift_block;
+		shift_block++;
+	}
+	block_count++;
+	new_block->ptr = end;
+	new_block->size = size;
 	return new_block->ptr;
 }
 
@@ -90,18 +85,21 @@ void *alloc(unsigned size) {
  * @note Invalid or unallocated addresses are ignored
  */
 void dealloc(void *ptr) {
-	int i;
 
 	// Find a block with a pointer equal to ptr
-	for (i = 1; i < blocks_count; i++) {
-		if (blocks[i].ptr == ptr) {
-			blocks_count--;
-			break;
+	struct block *last_block = (struct block *) (heap + HEAP_CAPACITY) - block_count;
+	struct block *curr_block = (struct block *) (heap + HEAP_CAPACITY) - 1;
+	while (curr_block >= last_block && curr_block->ptr != ptr)
+		curr_block--;
+
+	// If a block was found, remove it from the list
+	if (curr_block >= last_block) {
+		block_count--;
+		while (curr_block > last_block) {
+			*curr_block = *(curr_block-1);
+			curr_block--;
 		}
 	}
-
-	// Shift all blocks after i back one to remove i
-	do blocks[i] = blocks[i+1]; while (i++ < blocks_count);
 }
 
 /**
@@ -111,26 +109,17 @@ void dealloc(void *ptr) {
 #ifdef SSA_PRINT
 #include <stdio.h> // printf
 void print_blocks(void) {
+	char *end = heap;
+	struct block *block = (struct block *) (heap + HEAP_CAPACITY) - 1;
+
 	printf("\nAllocated blocks:\n");
-	for (int i = 0; i < blocks_count; i++) {
-
-		// Print block details if not the first zero-sized block
-		if (blocks[i].size) {
-			printf(
-				"  %p - %p (%d bytes)\n",
-				(void *) blocks[i].ptr,
-				(void *) (blocks[i].ptr + blocks[i].size - 1),
-				blocks[i].size);
-		}
-
-		// Print the size of a gap if there is one
-		struct block *prev_block = blocks + i;
-		char *block_start = prev_block->ptr + prev_block->size;
-		char *block_end = (i < blocks_count - 1) ? (prev_block + 1)->ptr : heap + HEAP_CAPACITY;
-		int gap = block_end - block_start;
-		if (gap)
-			printf("  < Gap of %d bytes >\n", gap);
+	for (int i = 0; i < block_count; i++, block--) {
+		if (block->ptr - end)
+			printf("  < gap of %d bytes >\n", (int) (block->ptr - end));
+		end = block->ptr + block->size;
+		printf("  %p - %p (%d bytes)\n", (void *) block->ptr, (void *) (end - 1), block->size);
 	}
+	printf("  < %d bytes remaining >\n", (int) ((char *) (block + 1) - end));
 }
 #else
 void print_blocks(void) {}
