@@ -18,6 +18,7 @@
 
 #define SSA_OVERRIDE
 #include "ssa.h"
+#include <stdio.h>
 
 int main(int argc, char **argv) {
 
@@ -63,4 +64,34 @@ int main(int argc, char **argv) {
 	free(ptr9);
 	free(ptr10); // ptr10 is NULL, so this will be ignored
 	ssa_print_blocks();
+
+	ptr1 = malloc(10);
+	ptr1[0] = 1; ptr1[1] = 2; ptr1[2] = 3;
+	free(ptr1);
+
+	ptr2 = calloc(10,1);
+	if (ptr2[0])
+		return 1;
+	free(ptr2);
+
+	ptr1 = malloc(10);
+	ptr2 = malloc(10);
+	ptr3 = malloc(10);
+	free(ptr2);
+	ssa_print_blocks();
+
+	ptr2 = realloc(ptr1, 15);
+	ssa_print_blocks();
+	if (ptr1 != ptr2)
+		return 2;
+	ptr1 = realloc(ptr2, 19);
+	ssa_print_blocks();
+	if (ptr1 != ptr2)
+		return 3;
+	ptr2 = realloc(ptr1, 20);
+	ssa_print_blocks();
+	ptr1 = realloc(ptr2, 0);
+	ssa_print_blocks();
+
+	return 0;
 }

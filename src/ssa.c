@@ -103,6 +103,85 @@ void ssa_free(void *ptr) {
 }
 
 /**
+ * Reserves and returns a pointer to bytes on heap, all initialized to zero.
+ *
+ * This function simply wraps ssa_malloc and zeros out the returned buffer.
+ * As such, it also runs in O(n*m) time, where is the number of blocks
+ * currently allocated and m is count*size
+ *
+ * @param count Number of members to allocate on the heap
+ * @param size Size in bytes of each member
+ * @return A pointer to the beginning of the bytes on the heap
+ * @note The total number of bytes reserved on the heap is simply count*size
+ * @note NULL is returned if no space could be allocated on the heap
+ */
+void *ssa_calloc(unsigned count, unsigned size) {
+
+	// Allocate at least 1 byte to ensure the returned pointer is unique
+	if (count == 0 || size == 0)
+		count = size = 1;
+
+	// Wrap ssa_malloc and set zero out returned buffer
+	char *ptr = ssa_malloc(count * size);
+	for (int i = 0; ptr && i < count * size; i++)
+		ptr[i] = 0;
+	return ptr;
+}
+
+/**
+ * Changes the size of the allocated block pointed to by ptr.
+ *
+ * First finds the block corresponding to ptr, if not found it simply returns
+ * NULL. Otherwise, if we change set the new size of this block without
+ * interfering with any other blocks or overlapping into the block list,
+ * we just set the block size to the new size and return the original pointer.
+ * Finally, if we can't expand the block we have to completely reallocate the
+ * contents of the block into a bigger buffer. To do that, we allocate another
+ * block with the correct size and copy the contents of the old block into it.
+ * We also then free the old block.
+ * In total, this function runs in O(n*m) time, where is the number of blocks
+ * currently allocated and m is size of the original block.
+ *
+ * @param ptr The address of the buffer on the heap to be resized
+ * @param size Number of bytes to resize the buffer to
+ * @return The address of the resized buffer
+ * @note Invalid or unallocated addresses are ignored and return NULL
+ */
+void *ssa_realloc(void *ptr, unsigned size) {
+
+	// Allocate at least 1 byte to ensure the returned pointer is unique
+	if (size == 0)
+		size = 1;
+
+	// Find a block with a pointer equal to ptr
+	struct block *last_block = (struct block *) (heap + HEAP_CAPACITY) - block_count;
+	struct block *curr_block = (struct block *) (heap + HEAP_CAPACITY) - 1;
+	while (curr_block >= last_block && curr_block->ptr != ptr)
+		curr_block--;
+
+	// Block wasn't found
+	if (curr_block < last_block)
+		return NULL;
+
+	// Are we able to simple contract or expand reserved memory?
+	char *free_space_end = (curr_block == last_block) ? (char *) last_block : (curr_block-1)->ptr;
+	if (curr_block->ptr + size <= free_space_end) {
+		curr_block->size = size;
+		return ptr;
+	}
+
+	// Otherwise we have to copy the contents to a new allocation
+	// TODO: Is it possible to free before allocating?
+	char *new_ptr = ssa_malloc(size);
+	if (!new_ptr)
+		return NULL;
+	for (int i = 0; i < curr_block->size; i++)
+		new_ptr[i] = curr_block->ptr[i];
+	ssa_free(ptr);
+	return new_ptr;
+}
+
+/**
  * Prints the list of currently allocated blocks on the heap.
  * Define SSA_PRINT when compiling to enable.
  */
