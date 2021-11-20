@@ -20,8 +20,10 @@
 #define SSA_H
 
 #ifdef SSA_OVERRIDE
-#define malloc(x) alloc(x)
-#define free(x) dealloc(x)
+#define malloc(s) ssa_malloc(s)
+#define free(p) ssa_free(p)
+#define calloc(n, s) ssa_calloc(n, s)
+#define realloc(p, s) ssa_realloc(p, s)
 #endif
 
 /**
@@ -32,7 +34,7 @@
  * @note The allocated buffer is not initialized
  * @note NULL is returned if no space could be allocated on the heap
  */
-void *alloc(unsigned size);
+void *ssa_malloc(unsigned size);
 
 /**
  * Frees up the allocated bytes on the heap pointed to by ptr.
@@ -40,12 +42,33 @@ void *alloc(unsigned size);
  * @param ptr The address of the buffer on the heap to be deallocated
  * @note Invalid or unallocated addresses are ignored
  */
-void dealloc(void *ptr);
+void ssa_free(void *ptr);
+
+/**
+ * Reserves and returns a pointer to bytes on heap, all initialized to zero.
+ *
+ * @param count Number of members to allocate on the heap
+ * @param size Size in bytes of each member
+ * @return A pointer to the beginning of the bytes on the heap
+ * @note The total number of bytes reserved on the heap is simply count*size
+ * @note NULL is returned if no space could be allocated on the heap
+ */
+void *ssa_calloc(unsigned count, unsigned size);
+
+/**
+ * Changes the size of the allocated block pointed to by ptr.
+ *
+ * @param ptr The address of the buffer on the heap to be resized
+ * @param size Number of bytes to resize the buffer to
+ * @return The address of the resized buffer
+ * @note Invalid or unallocated addresses are ignored and return NULL
+ */
+void *ssa_realloc(void *ptr, unsigned size);
 
 /**
  * Prints the list of currently allocated blocks on the heap.
  * Define SSA_PRINT when compiling to enable.
  */
-void print_blocks(void);
+void ssa_print_blocks(void);
 
 #endif
