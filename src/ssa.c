@@ -19,10 +19,12 @@
 #include "ssa.h"
 
 #define NULL ((void *) 0)
-#define HEAP_CAPACITY (65536)
+#ifndef SSA_HEAP_SIZE
+#define SSA_HEAP_SIZE (65536)
+#endif
 
 struct block { char *ptr; unsigned size; };
-static char heap[HEAP_CAPACITY];
+static char heap[SSA_HEAP_SIZE];
 static int block_count;
 
 /**
@@ -47,7 +49,7 @@ void *ssa_malloc(unsigned size) {
 
 	// Locate space for the new block
 	char *end = heap;
-	struct block *new_block = (struct block *) (heap + HEAP_CAPACITY) - 1;
+	struct block *new_block = (struct block *) (heap + SSA_HEAP_SIZE) - 1;
 	for (int i = 0; i < block_count; i++, new_block--) {
 		if (new_block->ptr - end >= size)
 			break;
@@ -55,7 +57,7 @@ void *ssa_malloc(unsigned size) {
 	}
 
 	// Check there is enough free space between allocated memory and the block list including this new block
-	struct block *last_block = (struct block *) (heap + HEAP_CAPACITY) - block_count;
+	struct block *last_block = (struct block *) (heap + SSA_HEAP_SIZE) - block_count;
 	char *free_space_start = block_count ? last_block->ptr + last_block->size : heap;
 	free_space_start += (new_block == last_block-1) * size;
 	if (free_space_start > (char *) (last_block-1))
@@ -87,8 +89,8 @@ void *ssa_malloc(unsigned size) {
 void ssa_free(void *ptr) {
 
 	// Find a block with a pointer equal to ptr
-	struct block *last_block = (struct block *) (heap + HEAP_CAPACITY) - block_count;
-	struct block *curr_block = (struct block *) (heap + HEAP_CAPACITY) - 1;
+	struct block *last_block = (struct block *) (heap + SSA_HEAP_SIZE) - block_count;
+	struct block *curr_block = (struct block *) (heap + SSA_HEAP_SIZE) - 1;
 	while (curr_block >= last_block && curr_block->ptr != ptr)
 		curr_block--;
 
@@ -154,8 +156,8 @@ void *ssa_realloc(void *ptr, unsigned size) {
 		size = 1;
 
 	// Find a block with a pointer equal to ptr
-	struct block *last_block = (struct block *) (heap + HEAP_CAPACITY) - block_count;
-	struct block *curr_block = (struct block *) (heap + HEAP_CAPACITY) - 1;
+	struct block *last_block = (struct block *) (heap + SSA_HEAP_SIZE) - block_count;
+	struct block *curr_block = (struct block *) (heap + SSA_HEAP_SIZE) - 1;
 	while (curr_block >= last_block && curr_block->ptr != ptr)
 		curr_block--;
 
@@ -189,7 +191,7 @@ void *ssa_realloc(void *ptr, unsigned size) {
 #include <stdio.h> // printf
 void ssa_print_blocks(void) {
 	char *end = heap;
-	struct block *block = (struct block *) (heap + HEAP_CAPACITY) - 1;
+	struct block *block = (struct block *) (heap + SSA_HEAP_SIZE) - 1;
 
 	printf("\nAllocated blocks:\n");
 	for (int i = 0; i < block_count; i++, block--) {

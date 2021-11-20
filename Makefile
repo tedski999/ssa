@@ -1,7 +1,7 @@
 TARGET  = ssa
 CC      = gcc
 AR      = ar
-CFLAGS  = -fpic -Iinc -DSSA_PRINT -Wall -pedantic -O3
+CFLAGS  = -fpic -Iinc -DSSA_PRINT -DSSA_HEAP_SIZE=1024 -Wall -pedantic -O3
 
 # Build static and dynamic libraries
 .PHONY: build

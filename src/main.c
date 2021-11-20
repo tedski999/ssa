@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 	ssa_print_blocks();
 
 	// Allocate the entire heap
-	char *ptr9 = malloc(65536 - 2 * 16); // 2 * 16 bytes of space needed for the ptr9 and ptr10 blocks
+	char *ptr9 = malloc(SSA_HEAP_SIZE - 2 * 16); // 2 * 16 bytes of space needed for the ptr9 and ptr10 blocks
 	ssa_print_blocks();
 
 	// Try allocate a single additional byte
