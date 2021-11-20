@@ -189,19 +189,42 @@ void *ssa_realloc(void *ptr, unsigned size) {
  */
 #ifdef SSA_PRINT
 #include <stdio.h> // printf
+
+static char *bytes_magnitude(int bytes, double *foo) {
+	*foo = bytes;
+	char *byte_units[] = { "bytes", "KiB", "MiB", "GiB", "TiB" };
+	int bytes_units_mag = 1024, bytes_units_len = 5, mag = 0;
+	while (++mag < bytes_units_len && *foo >= bytes_units_mag)
+		*foo /= bytes_units_mag;
+	return byte_units[mag - 1];
+}
+
 void ssa_print_blocks(void) {
 	char *end = heap;
 	struct block *block = (struct block *) (heap + SSA_HEAP_SIZE) - 1;
+	double magnitude;
+	char *unit;
 
 	printf("\nAllocated blocks:\n");
 	for (int i = 0; i < block_count; i++, block--) {
-		if (block->ptr - end)
-			printf("  < gap of %d bytes >\n", (int) (block->ptr - end));
+
+		// Print gap if any
+		if (block->ptr - end) {
+			unit = bytes_magnitude(block->ptr - end, &magnitude);
+			printf("  < Gap of %g %s >\n", magnitude, unit);
+		}
+
+		// Print block
 		end = block->ptr + block->size;
-		printf("  %p - %p (%d bytes)\n", (void *) block->ptr, (void *) (end - 1), block->size);
+		unit = bytes_magnitude(block->size, &magnitude);
+		printf("  %p - %p (%g %s)\n", (void *) block->ptr, (void *) (end - 1), magnitude, unit);
 	}
-	printf("  < %d bytes remaining >\n", (int) ((char *) (block + 1) - end));
+
+	// Print gap between allocated memory blocks and block list
+	unit = bytes_magnitude((char *) (block + 1) - end, &magnitude);
+	printf("  < %g %s remaining >\n", magnitude, unit);
 }
+
 #else
 void print_blocks(void) {}
 #endif
