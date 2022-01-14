@@ -1,46 +1,72 @@
-TARGET  = ssa
-CC      = gcc
-AR      = ar
-CFLAGS  = -fpic -Iinc -DSSA_PRINT -DSSA_HEAP_SIZE=1024 -Wall -pedantic -O3
+TARGET  := ssa
+CC      := gcc
+AR      := ar
+BUILD   := release
+OBJ_DIR := build/${BUILD}
+LIB_DIR := lib/${BUILD}
 
-# Build static and dynamic libraries
+override CFLAGS += -fpic -Iinclude -Wall -pedantic
+override LFLAGS +=
+ifeq (${BUILD}, release)
+override CFLAGS += -O3
+else ifeq (${BUILD}, debug)
+override CFLAGS += -g -Og -DSSA_DEBUG
+else
+$(error Unrecognised build type '${BUILD}')
+endif
+
+# Build static and dynamic library build
 .PHONY: build
-build: lib/lib${TARGET}.so lib/${TARGET}.a
-	@echo "Library build complete."
+build: ${LIB_DIR}/lib${TARGET}.so ${LIB_DIR}/${TARGET}.a
+	@echo -e "\n# Library ${BUILD} build complete."
+
+# Build debug library build
+.PHONY: debug
+debug:
+	@make --no-print-directory BUILD="debug"
 
 # Build everything
 .PHONY: all
-all: bin/${TARGET}_dynamic bin/${TARGET}_static
-	@echo "Full build complete."
+all: build debug \
+	bin/tests/check \
+	bin/examples/linkedlist \
+	bin/examples/strings \
+	bin/examples/random
+	@echo -e "\n# Full build complete."
+
+# Build and run unit tests
+.PHONY: check
+check: bin/tests/check
+	@echo -e "\n# Running unit tests..."
+	./bin/tests/check
 
 # Remove build directories
 .PHONY: clean
 clean:
-	@echo "Removing build directories..."
-	@rm -rf obj lib bin
+	@echo -e "\n# Removing build files..."
+	rm -rf build lib bin
 
-lib/lib${TARGET}.so: obj/${TARGET}.o
-	@echo "Linking $@..."
+# Create dynamic library
+${LIB_DIR}/lib${TARGET}.so: ${OBJ_DIR}/src/${TARGET}.o
+	@echo -e "\n# Linking as dynamic library $@..."
 	@mkdir -p $(@D)
-	@$(CC) -shared -o $@ $^
+	$(CC) -shared -o $@ $^
 
-lib/${TARGET}.a: obj/${TARGET}.o
-	@echo "Linking $@..."
+# Create static library
+${LIB_DIR}/${TARGET}.a: ${OBJ_DIR}/src/${TARGET}.o
+	@echo -e "\n# Linking as static library $@..."
 	@mkdir -p $(@D)
-	@$(AR) rcs $@ $^
+	$(AR) rcs $@ $^
 
-bin/${TARGET}_dynamic: obj/main.o lib/lib${TARGET}.so
-	@echo "Linking $@..."
+# Link binary file from object files
+bin/%: ${OBJ_DIR}/%.o ${LIB_DIR}/lib${TARGET}.so
+	@echo -e "\n# Linking $@..."
 	@mkdir -p $(@D)
-	@$(CC) -o $@ $^
-
-bin/${TARGET}_static: obj/main.o lib/${TARGET}.a
-	@echo "Linking $@..."
-	@mkdir -p $(@D)
-	@$(CC) -o $@ $^
+	$(CC) -o $@ $^
 
 # Compile a source file into an object file
-obj/%.o: src/%.c Makefile
-	@echo "Compiling $< -> $@"
+.PRECIOUS: ${OBJ_DIR}/%.o
+${OBJ_DIR}/%.o: %.c Makefile
+	@echo -e "\n# Compiling $< -> $@"
 	@mkdir -p $(@D)
-	@$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@
