@@ -185,9 +185,9 @@ void *ssa_realloc(void *ptr, unsigned size) {
 
 /**
  * Prints the list of currently allocated blocks on the heap.
- * Define SSA_PRINT when compiling to enable.
+ * Define SSA_DEBUG when compiling to enable.
  */
-#ifdef SSA_PRINT
+#ifdef SSA_DEBUG
 #include <stdio.h> // printf
 
 static char *bytes_magnitude(int bytes, double *foo) {
@@ -225,6 +225,4 @@ void ssa_print_blocks(void) {
 	printf("  < %g %s remaining >\n", magnitude, unit);
 }
 
-#else
-void print_blocks(void) {}
 #endif

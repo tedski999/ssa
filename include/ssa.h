@@ -67,8 +67,10 @@ void *ssa_realloc(void *ptr, unsigned size);
 
 /**
  * Prints the list of currently allocated blocks on the heap.
- * Define SSA_PRINT when compiling to enable.
+ * Define SSA_DEBUG when compiling to enable.
  */
+#ifdef SSA_DEBUG
 void ssa_print_blocks(void);
+#endif
 
 #endif
